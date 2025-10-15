@@ -22,7 +22,6 @@ class ExtendedKalmanFilter
 		float Pcap[4][4];		// Predicted Error State Covariance (before measurement z)
 		float P[4][4];			// Estimated Covariance of the state (after measurement z)
 		float F[4][4];			// Fundamental Matrix/ State Transition Matrix
-		float FP[4][4];			// Product of F and P
 		float Q[4][4];			// Process Noise Covariance Matrix
 		float Hqcap[6][4];
 		float PcapHT[4][6];
@@ -30,19 +29,24 @@ class ExtendedKalmanFilter
 		float s[6][6];			// copy of S
 		float sinv[6][6];		// S^-1
 		float Icol[6], Y[6];
-		float SigmaOmega[3]; 	// Gyro spectral noise covariance
+		float SigmaOmega; 		// Gyro spectral noise covariance
 		float R[6];				// Measurement noise covariance matrix
+		float dt;				// sampling time
 		float dt2;				// half of sampling time
 		float rx, rz;			// magnetic inclination
+		float magDeclination;	// magnetic declination
 
 	public:
 		ExtendedKalmanFilter();
-		void UpdateU(float gx, float gy, float gz);
-		void SetGyroNoise(float x, float y, float z);
-		void SetR(float NoiseAx, float NoiseAy, float NoiseAz, float NoiseMx, float NoiseMy, float NoiseMz);
-		void SetMagneticInclination(float degrees);
-		bool Run(float ax, float ay, float az, float mz, float gx, float gy, float gz, float mx, float my);
 		void SetSampleTime(float dt2);
+		void SetInitialState(float ax, float ay, float az, float mx, float my, float mz);
+		void SetMagneticDip(float degrees);
+		void SetGyroNoise(float Noise);
+		void SetR(float NoiseAx, float NoiseAy, float NoiseAz, float NoiseMx, float NoiseMy, float NoiseMz);
+		bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+		bool Run(float ax, float ay, float az, float gx, float gy, float gz);
+		void GetOrientation(Quanternion& qState);
+		void UpdateU(float gx, float gy, float gz);
 
 };
 

@@ -24,10 +24,13 @@ void Quanternion::Conjugate()
 void Quanternion::Inverse()
 {
 	double normSqr = GetNorm();
-	normSqr *= normSqr;
+	if (normSqr)
+	{
+		normSqr *= normSqr;
 
-	s /= normSqr;
-	x /= normSqr;
-	y /= normSqr;
-	z /= normSqr;
+		s /= normSqr;
+		x /= normSqr;
+		y /= normSqr;
+		z /= normSqr;
+	}
 }
