@@ -1,11 +1,11 @@
-#include "quanternion.hpp"
+#include "quaternion.hpp"
 
-float Quanternion::GetNorm()
+float Quaternion::GetNorm()
 {
 	return sqrt(s * s + x * x + y * y + z * z);
 }
 
-void Quanternion::Normalise()
+void Quaternion::Normalise()
 {
 	double norm = GetNorm();
 	if (norm)
@@ -17,14 +17,14 @@ void Quanternion::Normalise()
 	}
 }
 
-void Quanternion::Conjugate()
+void Quaternion::Conjugate()
 {
 	x = -x;
 	y = -y;
 	z = -z;
 }
 
-void Quanternion::Inverse()
+void Quaternion::Inverse()
 {
 	double normSqr = GetNorm();
 	if (normSqr)

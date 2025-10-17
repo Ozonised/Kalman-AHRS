@@ -1,21 +1,21 @@
-#ifndef QUANTERNION_H_
-#define QUANTERNION_H_
+#ifndef QUATERNION_H_
+#define QUATERNION_H_
 
 #include <math.h>
 
-class Quanternion
+class Quaternion
 {
 	private:
 
 	public:
 		float s, x, y, z;
-		Quanternion() :
+		Quaternion() :
 			s(0), x(0), y(0), z(0)
 		{
 
 		}
 
-		Quanternion(float scalar, float i, float j, float k)
+		Quaternion(float scalar, float i, float j, float k)
 		: s(scalar), x(i), y(j), z(k)
 		{
 
@@ -27,4 +27,4 @@ class Quanternion
 		void Inverse();
 };
 
-#endif /* QUANTERNION_H_ */
+#endif /* QUATERNION_H_ */

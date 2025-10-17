@@ -1,7 +1,7 @@
 #ifndef EXTENDEDKALMANFILTER_HPP_
 #define _EXTENDEDKALMANFILTER_HPP_
 
-#include "quanternion.hpp"
+#include "quaternion.hpp"
 #include "math.h"
 #include <stdbool.h>
 #include <string.h>
@@ -10,8 +10,8 @@
 class ExtendedKalmanFilter
 {
 	private:
-		Quanternion qcap; 		// next state estimate
-		Quanternion q;			// state / output
+		Quaternion qcap; 		// next state estimate
+		Quaternion q;			// state / output
 		float v[6];				// Measurement Residual/ Error / Difference between measurement(z) and estimate(Xcap)
 		float acap[3];
 		float mcap[3];
@@ -38,7 +38,7 @@ class ExtendedKalmanFilter
 		void SetGyroNoise(float Noise);
 		void SetR(float NoiseAx, float NoiseAy, float NoiseAz, float NoiseMx, float NoiseMy, float NoiseMz);
 		bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
-		void GetOrientation(Quanternion& qState);
+		void GetOrientation(Quaternion& qState);
 };
 
 #endif /*EXTENDEDKALMANFILTER_HPP_ */

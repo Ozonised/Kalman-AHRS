@@ -471,7 +471,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
  * - Ensure that the filter has been updated (via `Run()`) before calling
  *   this function to obtain valid orientation data.
  */
-void ExtendedKalmanFilter::GetOrientation(Quanternion& qState)
+void ExtendedKalmanFilter::GetOrientation(Quaternion& qState)
 {
 	qState.s = q.s;
 	qState.x = q.x;
