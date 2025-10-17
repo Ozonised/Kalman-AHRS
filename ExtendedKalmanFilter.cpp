@@ -29,12 +29,29 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
 	rz = 0;
 }
 
-void ExtendedKalmanFilter::SetSampleTime(float t)
+/**
+ * @brief Sets the sampling time for the Extended Kalman Filter.
+ *
+ * @param[in] freq  Sampling frequency in Hertz (Hz).
+ *
+ * @return None
+ *
+ * @note
+ * Ensure that `freq` is non-zero to avoid division by zero.
+ */
+void ExtendedKalmanFilter::SetSampleTime(float freq)
 {
-	dt = 1.0f / t;
+	dt = 1.0f / freq;
 	dt2 = dt / 2;
 }
 
+/**
+ * @brief Sets the magnetic dip angle
+ *
+ * @param[in] degrees Dip angle in degrees
+ *
+ * @return None
+ */
 void ExtendedKalmanFilter::SetMagneticDip(float degrees)
 {
 	float rad = degrees *  0.01745f;
@@ -42,11 +59,41 @@ void ExtendedKalmanFilter::SetMagneticDip(float degrees)
 	rz = sin(rad);
 }
 
+/**
+ * @brief Sets the gyroscope process noise level for the Extended Kalman Filter.
+ *
+ * @param[in] Noise  Gyroscope process noise variance (typically in (rad/s)²).
+ *
+ * This approximation assumes identical and isotropic noise across all
+ * rotational axes and neglects cross-axis correlations. It greatly simplifies
+ * computation while providing adequate performance for most embedded AHRS
+ * and orientation-tracking applications.
+ *
+ * @ return None
+ */
 void ExtendedKalmanFilter::SetGyroNoise(float Noise)
 {
-	SigmaOmega = Noise;
+    SigmaOmega = Noise;
 }
 
+/**
+ * @brief Sets the measurement noise covariance values for the Extended Kalman Filter.
+ *
+ * This function defines the expected noise levels for both the accelerometer
+ * and magnetometer measurements.
+ *
+ * @param[in] NoiseAx  Accelerometer noise variance along the X-axis.
+ * @param[in] NoiseAy  Accelerometer noise variance along the Y-axis.
+ * @param[in] NoiseAz  Accelerometer noise variance along the Z-axis.
+ * @param[in] NoiseMx  Magnetometer noise variance along the X-axis.
+ * @param[in] NoiseMy  Magnetometer noise variance along the Y-axis.
+ * @param[in] NoiseMz  Magnetometer noise variance along the Z-axis.
+ *
+ * @note
+ * - All noise values should be positive.
+ * - Units typically correspond to (sensor units)², e.g., (m/s²)² for accelerometer,
+ *   and (µT)² for magnetometer.
+ */
 void ExtendedKalmanFilter::SetR(float NoiseAx, float NoiseAy, float NoiseAz,
 		float NoiseMx, float NoiseMy, float NoiseMz)
 {
@@ -58,9 +105,34 @@ void ExtendedKalmanFilter::SetR(float NoiseAx, float NoiseAy, float NoiseAz,
 	R[5] = NoiseMz;
 }
 
+/**
+ * @brief Executes one iteration of the Extended Kalman Filter to estimate orientation.
+ *
+ * This function performs both the prediction and update steps of the
+ * Extended Kalman Filter (EKF) using the latest sensor readings from the
+ * accelerometer, gyroscope, and magnetometer. It computes the estimated
+ * orientation as a unit quaternion `q`.
+ *
+ * @param[in] ax  Accelerometer X-axis measurement (m/s²)
+ * @param[in] ay  Accelerometer Y-axis measurement (m/s²)
+ * @param[in] az  Accelerometer Z-axis measurement (m/s²)
+ * @param[in] gx  Gyroscope X-axis measurement (dps/s)
+ * @param[in] gy  Gyroscope Y-axis measurement (dps/s)
+ * @param[in] gz  Gyroscope Z-axis measurement (dps/s)
+ * @param[in] mx  Magnetometer X-axis measurement (µT)
+ * @param[in] my  Magnetometer Y-axis measurement (µT)
+ * @param[in] mz  Magnetometer Z-axis measurement (µT)
+ *
+ * @return `true` if the computation completes successfully (no NaN or invalid values);
+ *         `false` if any numerical instability or invalid computation occurs.
+ * @note
+ * - The function assumes sensor axes are aligned and calibrated.
+ * - Ensure a valid sampling time is set via `SetSampleTime()` before calling `Run()`.
+ * - If NaN or invalid results occur, the function returns `false`.
+ */
 bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
-	// Normalize accelerometer and gyroscope readings
+	// Normalize accelerometer and magnetometer readings
 	float normA = sqrtf(ax * ax + ay * ay + az * az);
 	float normM = sqrtf(mx * mx + my * my + mz * mz);
 
@@ -73,6 +145,11 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	{
 		mx = mx / normM;	my = my / normM; mz = mz / normM;
 	}
+
+	// convert from degrees/s to rads/s
+	gx *= 0.01745f;
+	gy *= 0.01745f;
+	gz *= 0.01745f;
 
     // ============================================================
     // PREDICTION STEP - Using gyroscope
@@ -104,7 +181,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 				FP[i][j] += F[i][k] * P[k][j];
 			}
 
-	// Finally, Pcap = F*P*Ft + Q
+	// Finally, Pcap = F*P*Ft + Q, here Q = SigmaOmega, i.e, gyro noise
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 		{
@@ -380,6 +457,20 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
  	return true;
 }
 
+/**
+ * @brief Retrieves the current estimated orientation quaternion.
+ *
+ * @param[out] qState Reference to `Quanternion` object that will receive
+ *        	  the current orientation (s, x, y, z components).
+ *
+ * @details
+ * The quaternion `q` represents the current estimated orientation of
+ * the system with respect to the global (Earth) reference frame.
+ *
+ * @note
+ * - Ensure that the filter has been updated (via `Run()`) before calling
+ *   this function to obtain valid orientation data.
+ */
 void ExtendedKalmanFilter::GetOrientation(Quanternion& qState)
 {
 	qState.s = q.s;

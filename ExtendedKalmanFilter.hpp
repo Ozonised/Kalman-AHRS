@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
-// default magnetometer noise
+
 class ExtendedKalmanFilter
 {
 	private:
