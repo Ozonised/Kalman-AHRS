@@ -6,26 +6,23 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
 	qcap.s = 1;
 
 	memset(P, 0, sizeof(P));
-	P[0][0] = 0.03;
-	P[1][1] = 0.03;
-	P[2][2] = 0.03;
-	P[3][3] = 0.03;
+	P[0][0] = 0.1;
+	P[1][1] = 0.1;
+	P[2][2] = 0.1;
+	P[3][3] = 0.6;
 
-	memset(a, 0, sizeof(a));
-	memset(m, 0, sizeof(m));
-	memset(U, 0, sizeof(U));
 	// default gyroscoppe noise
-	SigmaOmega = 0.01;
+	SigmaOmega = 0.0025;
 
 	// default accelerometer noise
-	R[0] =0.05;
-	R[1] =0.05;
-	R[2] =0.05;
+	R[0] =0.01;
+	R[1] =0.01;
+	R[2] =0.01;
 
 	// default magnetometer noise
-	R[3] = 0.8;
-	R[4] = 0.8;
-	R[5] = 0.8;
+	R[3] = 0.1;
+	R[4] = 0.1;
+	R[5] = 0.1;
 
 	magDeclination = 0;
 	rx = 1;
@@ -69,41 +66,35 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 
 	if (normA)
 	{
-		a[0] = ax / normA;	a[1] = ay / normA;	a[2] = az / normA;
+		ax = ax / normA;	ay = ay / normA;	az = az / normA;
 	}
 
 	if (normM)
 	{
-		m[0] = mx / normM;	m[1] = my / normM; m[2] = mz / normM;
+		mx = mx / normM;	my = my / normM; mz = mz / normM;
 	}
-
-	U[0] = gx; U[1] = gy; U[2] = gz;
-
 
     // ============================================================
     // PREDICTION STEP - Using gyroscope
     // ============================================================
 
-	qcap.s = q.s - dt2 * (U[0]*q.x + U[1]*q.y + U[2]*q.z);
-	qcap.x = q.x + dt2 * (U[0]*q.s - U[1]*q.z + U[2]*q.y);
-	qcap.y = q.y + dt2 * (U[0]*q.z + U[1]*q.s - U[2]*q.x);
-	qcap.z = q.z + dt2 * (-U[0]*q.y + U[1]*q.x + U[2]*q.s);
+	qcap.s = q.s - dt2 * (gx*q.x + gy*q.y + gz*q.z);
+	qcap.x = q.x + dt2 * (gx*q.s + gz*q.y - gy*q.z);
+	qcap.y = q.y + dt2 * (gy*q.s + gx*q.z - gz*q.x);
+	qcap.z = q.z + dt2 * (gz*q.s + gy*q.x - gx*q.y);
 
 	qcap.Normalise();
 
 	// Fill F
-    F[0][0] = 1.0;       F[0][1] = -dt2 * U[0];  F[0][2] = -dt2 * U[1];  F[0][3] = -dt2 * U[2];
-    F[1][0] =  dt2 * U[0]; F[1][1] = 1.0;        F[1][2] =  dt2 * U[2];  F[1][3] = -dt2 * U[1];
-    F[2][0] =  dt2 * U[1]; F[2][1] = -dt2 * U[2]; F[2][2] = 1.0;         F[2][3] =  dt2 * U[0];
-    F[3][0] =  dt2 * U[2]; F[3][1] =  dt2 * U[1]; F[3][2] = -dt2 * U[0];  F[3][3] = 1.0;
+    F[0][0] = 1.0;         F[0][1] = -dt2 * gx;  	F[0][2] = -dt2 * gy;  	F[0][3] = -dt2 * gz;
+    F[1][0] = dt2 * gx;  F[1][1] = 1.0;         	F[1][2] = dt2 * gz;   	F[1][3] = -dt2 * gy;
+    F[2][0] = dt2 * gy;  F[2][1] = -dt2 * gz; 	F[2][2] = 1.0;          	F[2][3] = dt2 * gx;
+    F[3][0] = dt2 * gz;  F[3][1] = dt2 * gy;  	F[3][2] = -dt2 * gx;  	F[3][3] = 1.0;
 
 	// Process Noise Covariance: Pcap = FPFt + Q
 	// FP = F * P
-    float FP[4][4] = {0}, FPFt[4][4] = {0};
-
-
+    float FP[4][4] = {0};
 	// Pcap = F * P
-
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			for (int k = 0; k < 4; k++)
@@ -117,10 +108,9 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 		{
-			FPFt[i][j] = 0;
+			Pcap[i][j] = 0;
 			for (int k = 0; k < 4; k++)
-				FPFt[i][j] += FP[i][k] * F[j][k];
-			Pcap[i][j] = FPFt[i][j];
+				Pcap[i][j] += FP[i][k] * F[j][k];
 			if (isnan(P[i][j]))
 				return false;
 		}
@@ -154,15 +144,15 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	}
 	// v = z - h(qcap)
 	// z = [a, m]^T and h(qcap) = [acap, mcap]^T
-	v[0] = a[0] - acap[0];
-	v[1] = a[1] - acap[1];
-	v[2] = a[2] - acap[2];
+	v[0] = ax - acap[0];
+	v[1] = ay - acap[1];
+	v[2] = az - acap[2];
 
 	if (normM)
 	{
-		v[3] = m[0] - mcap[0];
-		v[4] = m[1] - mcap[1];
-		v[5] = m[2] - mcap[2];
+		v[3] = mx - mcap[0];
+		v[4] = my - mcap[1];
+		v[5] = mz - mcap[2];
 	} else
 	{
         // If no magnetometer, zero out these residuals to ignore magnetometer update
@@ -173,22 +163,13 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 
 	// S = H(qcap)*Pcap*H(qcap)^T + R
 	// H(qcap) = Jacobian of h(qcap)
-	Hqcap[0][0] = 2 * qcap.y;	Hqcap[0][1] = 2 * qcap.z;	Hqcap[0][2] = 2 * qcap.s;	Hqcap[0][3] = 2 * qcap.x;
-	Hqcap[1][0] = -2 * qcap.x;	Hqcap[1][1] = -2 * qcap.s;	Hqcap[1][2] = 2 * qcap.z;	Hqcap[1][3] = 2 * qcap.y;
-	Hqcap[2][0] = 2 * qcap.s;	Hqcap[2][1] = 2 * -qcap.x;	Hqcap[2][2] = 2 * -qcap.y;	Hqcap[2][3] = 2 * qcap.z;
+	Hqcap[0][0] = 2.0f * qcap.y;    Hqcap[0][1] = 2.0f * qcap.z;    Hqcap[0][2] = 2.0f * qcap.s;    Hqcap[0][3] = 2.0f * qcap.x;
+	Hqcap[1][0] = -2.0f * qcap.x;   Hqcap[1][1] = -2.0f * qcap.s;   Hqcap[1][2] = 2.0f * qcap.z;    Hqcap[1][3] = 2.0f * qcap.y;
+	Hqcap[2][0] = 2.0f * qcap.s;    Hqcap[2][1] = -2.0f * qcap.x;   Hqcap[2][2] = -2.0f * qcap.y;   Hqcap[2][3] = 2.0f * qcap.z;
 
-	if (normM)
-	{
-		Hqcap[3][0] = 2.0f * (rx*qcap.s - rz*qcap.y);  Hqcap[3][1] = 2.0f * (rx*qcap.x + rz*qcap.z);  Hqcap[3][2] = 2.0f * (-rx*qcap.y - rz*qcap.s); Hqcap[3][3] = 2.0f * (rx*qcap.z - rz*qcap.x);
-		Hqcap[4][0] = 2.0f * (rx*qcap.z + rz*qcap.x);  Hqcap[4][1] = 2.0f * (rx*qcap.y + rz*qcap.s);  Hqcap[4][2] = 2.0f * (rx*qcap.x - rz*qcap.y);  Hqcap[4][3] = 2.0f * (rx*qcap.s + rz*qcap.z);
-		Hqcap[5][0] = 2.0f * (-rx*qcap.y + rz*qcap.s); Hqcap[5][1] = 2.0f * (rx*qcap.z - rz*qcap.x);  Hqcap[5][2] = 2.0f * (rx*qcap.s + rz*qcap.y);  Hqcap[5][3] = 2.0f * (rx*qcap.y - rz*qcap.s);
-	} else
-	{
-        // Zero out magnetometer Jacobian rows to ignore magnetometer update
-        for (int i = 3; i < 6; i++)
-            for (int j = 0; j < 4; j++)
-                Hqcap[i][j] = 0.0f;
-	}
+	Hqcap[3][0] = 2.0f * (rx*qcap.s - rz*qcap.y);  Hqcap[3][1] = 2.0f * (rx*qcap.x + rz*qcap.z);  Hqcap[3][2] = 2.0f * (-rx*qcap.y - rz*qcap.s); Hqcap[3][3] = 2.0f * (rx*qcap.z - rz*qcap.x);
+	Hqcap[4][0] = 2.0f * (rx*qcap.z + rz*qcap.x);  Hqcap[4][1] = 2.0f * (rx*qcap.y + rz*qcap.s);  Hqcap[4][2] = 2.0f * (rx*qcap.x - rz*qcap.y);  Hqcap[4][3] = 2.0f * (rx*qcap.s + rz*qcap.z);
+	Hqcap[5][0] = 2.0f * (-rx*qcap.y + rz*qcap.s); Hqcap[5][1] = 2.0f * (rx*qcap.z - rz*qcap.x);  Hqcap[5][2] = 2.0f * (rx*qcap.s + rz*qcap.y);  Hqcap[5][3] = 2.0f * (rx*qcap.y - rz*qcap.s);
 
 	// PcapHT = Pcap*H(qcap)^T
 	PcapHT[0][0] = Pcap[0][0]*Hqcap[0][0]+Pcap[0][1]*Hqcap[0][1]+Pcap[0][2]*Hqcap[0][2]+Pcap[0][3]*Hqcap[0][3];
@@ -292,7 +273,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 
 	// L * U * S^-1 = I, now let U * S^-1 = Y
 	// therefore, L * Y = I
-
+	float Icol[6], Y[6];
  	for (uint8_t col = 0; col < 6; col++)
 	{
  		// now, L * Y = I, solve for Y, where L, Y and I are an nxn matrix (n = 6)
@@ -313,15 +294,15 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
         // Now, solve for S^-1 (sinv)
  		for (int8_t i = 5; i > -1; i--)
  		{
- 			sinv[i][col] = Y[i];
+ 			S[i][col] = Y[i];
  			for (int8_t j = i + 1; j < 6; j++)
- 				sinv[i][col] -= s[i][j] * sinv[j][col];
+ 				S[i][col] -= s[i][j] * S[j][col];
 
  			// singular pivot
  			if (fabs(s[i][i]) <= 0.00001f)
  				return false;
 
- 			sinv[i][col] /= s[i][i];
+ 			S[i][col] /= s[i][i];
  		}
 	}
 
@@ -335,7 +316,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
  		{
  			Kg[m][p] = 0;
  			for (uint8_t n = 0; n < 6; n++)
- 				Kg[m][p] += PcapHT[m][n] * sinv[n][p];
+ 				Kg[m][p] += PcapHT[m][n] * S[n][p];
 			if (isnan(Kg[m][p]))
 				return false;
  		}
@@ -346,17 +327,12 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 
 	// Correction: q = qcap + Kg(z - h(q))
  	// q = qcap + Kg * V
- 	// q = Kg * v
- 	q.s = Kg[0][0]*v[0]+Kg[0][1]*v[1]+Kg[0][2]*v[2]+Kg[0][3]*v[3]+Kg[0][4]*v[4]+Kg[0][5]*v[5];
- 	q.x = Kg[1][0]*v[0]+Kg[1][1]*v[1]+Kg[1][2]*v[2]+Kg[1][3]*v[3]+Kg[1][4]*v[4]+Kg[1][5]*v[5];
- 	q.y = Kg[2][0]*v[0]+Kg[2][1]*v[1]+Kg[2][2]*v[2]+Kg[2][3]*v[3]+Kg[2][4]*v[4]+Kg[2][5]*v[5];
- 	q.z = Kg[3][0]*v[0]+Kg[3][1]*v[1]+Kg[3][2]*v[2]+Kg[3][3]*v[3]+Kg[3][4]*v[4]+Kg[3][5]*v[5];
+	q.s = qcap.s + (Kg[0][0]*v[0]+Kg[0][1]*v[1]+Kg[0][2]*v[2]+Kg[0][3]*v[3]+Kg[0][4]*v[4]+Kg[0][5]*v[5]);
+	q.x = qcap.x + (Kg[1][0]*v[0]+Kg[1][1]*v[1]+Kg[1][2]*v[2]+Kg[1][3]*v[3]+Kg[1][4]*v[4]+Kg[1][5]*v[5]);
+	q.y = qcap.y + (Kg[2][0]*v[0]+Kg[2][1]*v[1]+Kg[2][2]*v[2]+Kg[2][3]*v[3]+Kg[2][4]*v[4]+Kg[2][5]*v[5]);
 
- 	// q = q + qcap
-	q.s += qcap.s;
- 	q.x += qcap.x;
- 	q.y += qcap.y;
- 	q.z	+= qcap.z;
+	if (normM)
+		q.z = qcap.z + (Kg[3][0]*v[0]+Kg[3][1]*v[1]+Kg[3][2]*v[2]+Kg[3][3]*v[3]+Kg[3][4]*v[4]+Kg[3][5]*v[5]);
 
     // ============================================================
     // COVARIANCE UPDATE: P = (I - Kg * H) * Pcap
@@ -401,7 +377,6 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
  	P[3][3] = I_KH[3][0]*Pcap[0][3]+I_KH[3][1]*Pcap[1][3]+I_KH[3][2]*Pcap[2][3]+I_KH[3][3]*Pcap[3][3];
 
  	q.Normalise();
-
  	return true;
 }
 
