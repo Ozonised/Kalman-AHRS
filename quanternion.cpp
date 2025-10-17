@@ -8,10 +8,13 @@ float Quanternion::GetNorm()
 void Quanternion::Normalise()
 {
 	double norm = GetNorm();
-	s = s / norm;
-	x = x / norm;
-	y = y / norm;
-	z = z / norm;
+	if (norm)
+	{
+		s = s / norm;
+		x = x / norm;
+		y = y / norm;
+		z = z / norm;
+	}
 }
 
 void Quanternion::Conjugate()
