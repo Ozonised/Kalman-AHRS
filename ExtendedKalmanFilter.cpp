@@ -12,7 +12,9 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
 	P[3][3] = 0.6;
 
 	// default gyroscoppe noise
-	SigmaOmega = 0.0025;
+	SigmaOmega[0] = 0.0025f;
+	SigmaOmega[1] = 0.0025f;
+	SigmaOmega[2] = 0.0025f;
 
 	// default accelerometer noise
 	R[0] =0.01;
@@ -62,18 +64,17 @@ void ExtendedKalmanFilter::SetMagneticDip(float degrees)
 /**
  * @brief Sets the gyroscope process noise level for the Extended Kalman Filter.
  *
- * @param[in] Noise  Gyroscope process noise variance (typically in (rad/s)²).
- *
- * This approximation assumes identical and isotropic noise across all
- * rotational axes and neglects cross-axis correlations. It greatly simplifies
- * computation while providing adequate performance for most embedded AHRS
- * and orientation-tracking applications.
+ * @param[in] NoiseX  Gyroscope process noise variance along the X-axis.
+ * @param[in] NoiseY  Gyroscope process noise variance along the Y-axis.
+ * @param[in] NoiseZ  Gyroscope process noise variance along the Z-axis.
  *
  * @ return None
  */
-void ExtendedKalmanFilter::SetGyroNoise(float Noise)
+void ExtendedKalmanFilter::SetGyroNoise(float NoiseX, float NoiseY, float NoiseZ)
 {
-    SigmaOmega = Noise;
+	SigmaOmega[0] = NoiseX;
+	SigmaOmega[1] = NoiseY;
+	SigmaOmega[2] = NoiseZ;
 }
 
 /**
@@ -192,10 +193,32 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 				return false;
 		}
 
-	Pcap[0][0] += SigmaOmega;
-	Pcap[1][1] += SigmaOmega;
-	Pcap[2][2] += SigmaOmega;
-	Pcap[3][3] += SigmaOmega;
+//	Pcap[0][0] += SigmaOmega;
+//	Pcap[1][1] += SigmaOmega;
+//	Pcap[2][2] += SigmaOmega;
+//	Pcap[3][3] += SigmaOmega;
+
+	Q[0][0] = -q.x*SigmaOmega[0]*-q.x+-q.y*SigmaOmega[1]*-q.y+-q.z*SigmaOmega[2]*-q.z;
+	Q[0][1] = -q.x*SigmaOmega[0]*q.s+-q.y*SigmaOmega[1]*-q.z+-q.z*SigmaOmega[2]*q.y;
+	Q[0][2] = -q.x*SigmaOmega[0]*q.z+-q.y*SigmaOmega[1]*q.s+-q.z*SigmaOmega[2]*-q.x;
+	Q[0][3] = -q.x*SigmaOmega[0]*-q.y+-q.y*SigmaOmega[1]*q.x+-q.z*SigmaOmega[2]*q.s;
+	Q[1][0] = q.s*SigmaOmega[0]*-q.x+-q.z*SigmaOmega[1]*-q.y+q.y*SigmaOmega[2]*-q.z;
+	Q[1][1] = q.s*SigmaOmega[0]*q.s+-q.z*SigmaOmega[1]*-q.z+q.y*SigmaOmega[2]*q.y;
+	Q[1][2] = q.s*SigmaOmega[0]*q.z+-q.z*SigmaOmega[1]*q.s+q.y*SigmaOmega[2]*-q.x;
+	Q[1][3] = q.s*SigmaOmega[0]*-q.y+-q.z*SigmaOmega[1]*q.x+q.y*SigmaOmega[2]*q.s;
+	Q[2][0] = q.z*SigmaOmega[0]*-q.x+q.s*SigmaOmega[1]*-q.y+-q.x*SigmaOmega[2]*-q.z;
+	Q[2][1] = q.z*SigmaOmega[0]*q.s+q.s*SigmaOmega[1]*-q.z+-q.x*SigmaOmega[2]*q.y;
+	Q[2][2] = q.z*SigmaOmega[0]*q.z+q.s*SigmaOmega[1]*q.s+-q.x*SigmaOmega[2]*-q.x;
+	Q[2][3] = q.z*SigmaOmega[0]*-q.y+q.s*SigmaOmega[1]*q.x+-q.x*SigmaOmega[2]*q.s;
+	Q[3][0] = -q.y*SigmaOmega[0]*-q.x+q.x*SigmaOmega[1]*-q.y+q.s*SigmaOmega[2]*-q.z;
+	Q[3][1] = -q.y*SigmaOmega[0]*q.s+q.x*SigmaOmega[1]*-q.z+q.s*SigmaOmega[2]*q.y;
+	Q[3][2] = -q.y*SigmaOmega[0]*q.z+q.x*SigmaOmega[1]*q.s+q.s*SigmaOmega[2]*-q.x;
+	Q[3][3] = -q.y*SigmaOmega[0]*-q.y+q.x*SigmaOmega[1]*q.x+q.s*SigmaOmega[2]*q.s;
+
+	Pcap[0][0] += Q[0][0];	Pcap[0][1] += Q[0][1]; Pcap[0][2] += Q[0][2]; Pcap[0][3] += Q[0][3];
+	Pcap[1][0] += Q[1][0];	Pcap[1][1] += Q[1][1]; Pcap[1][2] += Q[1][2]; Pcap[1][3] += Q[1][3];
+	Pcap[2][0] += Q[2][0];	Pcap[2][1] += Q[2][1]; Pcap[2][2] += Q[2][2]; Pcap[2][3] += Q[2][3];
+	Pcap[3][0] += Q[3][0];	Pcap[3][1] += Q[3][1]; Pcap[3][2] += Q[3][2]; Pcap[3][3] += Q[3][3];
 
     // ============================================================
     // MEASUREMENT UPDATE

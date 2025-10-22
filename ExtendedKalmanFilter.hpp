@@ -23,8 +23,9 @@ class ExtendedKalmanFilter
 		float PcapHT[4][6];
 		float S[6][6];			// Measurement Prediction Covariance (also stores S^-1)
 		float s[6][6];			// copy of S
-		float SigmaOmega; 		// Gyro spectral noise covariance
+		float SigmaOmega[3]; 	// Gyro spectral noise covariance
 		float R[6];				// Measurement noise covariance matrix
+		float Q[4][4];
 		float dt;				// sampling time
 		float dt2;				// half of sampling time
 		float rx, rz;			// magnetic inclination
@@ -35,7 +36,7 @@ class ExtendedKalmanFilter
 		void SetSampleTime(float dt2);
 		void SetInitialState(float ax, float ay, float az, float mx, float my, float mz);
 		void SetMagneticDip(float degrees);
-		void SetGyroNoise(float Noise);
+		void SetGyroNoise(float NoiseX, float NoiseY, float NoiseZ);
 		void SetR(float NoiseAx, float NoiseAy, float NoiseAz, float NoiseMx, float NoiseMy, float NoiseMz);
 		bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
 		void GetOrientation(Quaternion& qState);
