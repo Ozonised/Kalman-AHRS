@@ -230,8 +230,8 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 
 	// Predicted accelerometer measurement (gravity in body frame)
 	// acap = Cqt * g (NED frame)
-	acap[0] = 2*(qcap.x*qcap.z+qcap.s*qcap.y);
-	acap[1] = 2*(qcap.y*qcap.z-qcap.s*qcap.x);
+	acap[0] = 2.0f*(qcap.x*qcap.z+qcap.s*qcap.y);
+	acap[1] = 2.0f*(qcap.y*qcap.z-qcap.s*qcap.x);
 	acap[2] = qcapS_Squared-qcapX_Squared-qcapY_Squared+qcapZ_Squared;
 
 
@@ -239,8 +239,8 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	{
 		// mcap = Cqt * r (NED frame)
 		mcap[0] = (qcapS_Squared+qcapX_Squared-qcapY_Squared-qcapZ_Squared)*rx+2.0f*(qcap.x*qcap.z-qcap.s*qcap.y)*rz;
-		mcap[1] = 2.0f*(qcap.x*qcap.y+qcap.s*qcap.z)*rx+2.0f*(qcap.y*qcap.z-qcap.s*qcap.x)*rz;
-		mcap[2] = 2.0f*(qcap.x*qcap.z+qcap.s*qcap.y)*rx+(qcapS_Squared-qcapX_Squared-qcapY_Squared+qcapZ_Squared)*rz;
+		mcap[1] = 2.0f*(qcap.x*qcap.y+qcap.s*qcap.z)*rx+acap[1]*rz;
+		mcap[2] = acap[0]*rx+(acap[2])*rz;
 	}
 	// v = z - h(qcap)
 	// z = [a, m]^T and h(qcap) = [acap, mcap]^T

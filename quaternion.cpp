@@ -7,7 +7,7 @@ float Quaternion::GetNorm()
 
 void Quaternion::Normalise()
 {
-	double norm = GetNorm();
+	float norm = GetNorm();
 	if (norm)
 	{
 		s = s / norm;
@@ -26,7 +26,7 @@ void Quaternion::Conjugate()
 
 void Quaternion::Inverse()
 {
-	double normSqr = GetNorm();
+	float normSqr = GetNorm();
 	if (normSqr)
 	{
 		normSqr *= normSqr;
