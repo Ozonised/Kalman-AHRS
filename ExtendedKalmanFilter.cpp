@@ -137,12 +137,12 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	float normA = sqrtf(ax * ax + ay * ay + az * az);
 	float normM = sqrtf(mx * mx + my * my + mz * mz);
 
-	if (normA)
+	if (normA && fabs(normA) >= 0.00001f)
 	{
 		ax = ax / normA;	ay = ay / normA;	az = az / normA;
 	}
 
-	if (normM)
+	if (normM && fabs(normM) >= 0.00001)
 	{
 		mx = mx / normM;	my = my / normM; mz = mz / normM;
 	}

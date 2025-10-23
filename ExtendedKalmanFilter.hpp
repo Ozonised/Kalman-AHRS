@@ -33,7 +33,7 @@ class ExtendedKalmanFilter
 
 	public:
 		ExtendedKalmanFilter();
-		void SetSampleTime(float dt2);
+		void SetSampleTime(float freq);
 		void SetInitialState(float ax, float ay, float az, float mx, float my, float mz);
 		void SetMagneticDip(float degrees);
 		void SetGyroNoise(float NoiseX, float NoiseY, float NoiseZ);
