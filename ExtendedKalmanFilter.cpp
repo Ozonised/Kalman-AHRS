@@ -178,7 +178,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 				FP[i][j] += F[i][k] * P[k][j];
 			}
 
-	// Finally, Pcap = F*P*Ft + Q, here Q = SigmaOmega, i.e, gyro noise
+	// Finally, Pcap = F*P*Ft + Q
 	for (uint8_t i = 0; i < 4; i++)
 		for (uint8_t j = 0; j < 4; j++)
 		{
@@ -307,19 +307,20 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 
 		// Forward substitution: L * Y = Icol
 		float sum = 0;
-		for (uint8_t i = 0; i < 4; ++i)
+		int8_t i = 0, j = 0;
+		for (i = 0; i < 4; ++i)
 		{
 			sum = 0;
-			for (uint8_t j = 0; j < i; ++j)
+			for (j = 0; j < i; ++j)
 				sum += S[i][j] * Y[j];
 			Y[i] = Icol[i] - sum;
 		}
 
 		// Back substitution: U * X = Y, here X = one column of S^-1 (Sinv)
-		for (int8_t i = 3; i >= 0; --i)
+		for (i = 3; i >= 0; --i)
 		{
 			sum = 0;
-			for (uint8_t j = i + 1; j < 4; ++j)
+			for (j = i + 1; j < 4; ++j)
 				sum += S[i][j] * Sinv[j][col];
 
 			if (fabs(S[i][i]) < 1e-6f)
@@ -365,30 +366,28 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
     // ============================================================
 
  	// P = (I4 - Kg) * Pcap
- 	float I_Kg[4][4];
-
- 	I_Kg[0][0] = 1.0f - Kg[0][0];   I_Kg[0][1] = -Kg[0][1]; I_Kg[0][2] = -Kg[0][2]; I_Kg[0][3] = -Kg[0][3];
- 	I_Kg[1][0] = -Kg[1][0]; I_Kg[1][1] = 1.0f - Kg[1][1];   I_Kg[1][2] = -Kg[1][2]; I_Kg[1][3] = -Kg[1][3];
- 	I_Kg[2][0] = -Kg[2][0]; I_Kg[2][1] = -Kg[2][1]; I_Kg[2][2] = 1.0f - Kg[2][2];   I_Kg[2][3] = -Kg[2][3];
- 	I_Kg[3][0] = -Kg[3][0]; I_Kg[3][1] = -Kg[3][1]; I_Kg[3][2] = -Kg[3][2]; I_Kg[3][3] = 1.0f - Kg[3][3];
+ 	float _1mKg00 = 1.0f - Kg[0][0];
+ 	float _1mKg11 = 1.0f - Kg[1][1];
+ 	float _1mKg22 = 1.0f - Kg[2][2];
+ 	float _1mKg33 = 1.0f - Kg[3][3];
 
  	// Now, P = I_Kg * Pcap
- 	P[0][0] = I_Kg[0][0]*Pcap[0][0]+I_Kg[0][1]*Pcap[1][0]+I_Kg[0][2]*Pcap[2][0]+I_Kg[0][3]*Pcap[3][0];
- 	P[0][1] = I_Kg[0][0]*Pcap[0][1]+I_Kg[0][1]*Pcap[1][1]+I_Kg[0][2]*Pcap[2][1]+I_Kg[0][3]*Pcap[3][1];
- 	P[0][2] = I_Kg[0][0]*Pcap[0][2]+I_Kg[0][1]*Pcap[1][2]+I_Kg[0][2]*Pcap[2][2]+I_Kg[0][3]*Pcap[3][2];
- 	P[0][3] = I_Kg[0][0]*Pcap[0][3]+I_Kg[0][1]*Pcap[1][3]+I_Kg[0][2]*Pcap[2][3]+I_Kg[0][3]*Pcap[3][3];
- 	P[1][0] = I_Kg[1][0]*Pcap[0][0]+I_Kg[1][1]*Pcap[1][0]+I_Kg[1][2]*Pcap[2][0]+I_Kg[1][3]*Pcap[3][0];
- 	P[1][1] = I_Kg[1][0]*Pcap[0][1]+I_Kg[1][1]*Pcap[1][1]+I_Kg[1][2]*Pcap[2][1]+I_Kg[1][3]*Pcap[3][1];
- 	P[1][2] = I_Kg[1][0]*Pcap[0][2]+I_Kg[1][1]*Pcap[1][2]+I_Kg[1][2]*Pcap[2][2]+I_Kg[1][3]*Pcap[3][2];
- 	P[1][3] = I_Kg[1][0]*Pcap[0][3]+I_Kg[1][1]*Pcap[1][3]+I_Kg[1][2]*Pcap[2][3]+I_Kg[1][3]*Pcap[3][3];
- 	P[2][0] = I_Kg[2][0]*Pcap[0][0]+I_Kg[2][1]*Pcap[1][0]+I_Kg[2][2]*Pcap[2][0]+I_Kg[2][3]*Pcap[3][0];
- 	P[2][1] = I_Kg[2][0]*Pcap[0][1]+I_Kg[2][1]*Pcap[1][1]+I_Kg[2][2]*Pcap[2][1]+I_Kg[2][3]*Pcap[3][1];
- 	P[2][2] = I_Kg[2][0]*Pcap[0][2]+I_Kg[2][1]*Pcap[1][2]+I_Kg[2][2]*Pcap[2][2]+I_Kg[2][3]*Pcap[3][2];
- 	P[2][3] = I_Kg[2][0]*Pcap[0][3]+I_Kg[2][1]*Pcap[1][3]+I_Kg[2][2]*Pcap[2][3]+I_Kg[2][3]*Pcap[3][3];
- 	P[3][0] = I_Kg[3][0]*Pcap[0][0]+I_Kg[3][1]*Pcap[1][0]+I_Kg[3][2]*Pcap[2][0]+I_Kg[3][3]*Pcap[3][0];
- 	P[3][1] = I_Kg[3][0]*Pcap[0][1]+I_Kg[3][1]*Pcap[1][1]+I_Kg[3][2]*Pcap[2][1]+I_Kg[3][3]*Pcap[3][1];
- 	P[3][2] = I_Kg[3][0]*Pcap[0][2]+I_Kg[3][1]*Pcap[1][2]+I_Kg[3][2]*Pcap[2][2]+I_Kg[3][3]*Pcap[3][2];
- 	P[3][3] = I_Kg[3][0]*Pcap[0][3]+I_Kg[3][1]*Pcap[1][3]+I_Kg[3][2]*Pcap[2][3]+I_Kg[3][3]*Pcap[3][3];
+ 	P[0][0] = _1mKg00*Pcap[0][0]-Kg[0][1]*Pcap[1][0]-Kg[0][2]*Pcap[2][0]-Kg[0][3]*Pcap[3][0];
+ 	P[0][1] = _1mKg00*Pcap[0][1]-Kg[0][1]*Pcap[1][1]-Kg[0][2]*Pcap[2][1]-Kg[0][3]*Pcap[3][1];
+ 	P[0][2] = _1mKg00*Pcap[0][2]-Kg[0][1]*Pcap[1][2]-Kg[0][2]*Pcap[2][2]-Kg[0][3]*Pcap[3][2];
+ 	P[0][3] = _1mKg00*Pcap[0][3]-Kg[0][1]*Pcap[1][3]-Kg[0][2]*Pcap[2][3]-Kg[0][3]*Pcap[3][3];
+ 	P[1][0] = -Kg[1][0]*Pcap[0][0]+_1mKg11*Pcap[1][0]-Kg[1][2]*Pcap[2][0]-Kg[1][3]*Pcap[3][0];
+ 	P[1][1] = -Kg[1][0]*Pcap[0][1]+_1mKg11*Pcap[1][1]-Kg[1][2]*Pcap[2][1]-Kg[1][3]*Pcap[3][1];
+ 	P[1][2] = -Kg[1][0]*Pcap[0][2]+_1mKg11*Pcap[1][2]-Kg[1][2]*Pcap[2][2]-Kg[1][3]*Pcap[3][2];
+ 	P[1][3] = -Kg[1][0]*Pcap[0][3]+_1mKg11*Pcap[1][3]-Kg[1][2]*Pcap[2][3]-Kg[1][3]*Pcap[3][3];
+ 	P[2][0] = -Kg[2][0]*Pcap[0][0]-Kg[2][1]*Pcap[1][0]+_1mKg22*Pcap[2][0]-Kg[2][3]*Pcap[3][0];
+ 	P[2][1] = -Kg[2][0]*Pcap[0][1]-Kg[2][1]*Pcap[1][1]+_1mKg22*Pcap[2][1]-Kg[2][3]*Pcap[3][1];
+ 	P[2][2] = -Kg[2][0]*Pcap[0][2]-Kg[2][1]*Pcap[1][2]+_1mKg22*Pcap[2][2]-Kg[2][3]*Pcap[3][2];
+ 	P[2][3] = -Kg[2][0]*Pcap[0][3]-Kg[2][1]*Pcap[1][3]+_1mKg22*Pcap[2][3]-Kg[2][3]*Pcap[3][3];
+ 	P[3][0] = -Kg[3][0]*Pcap[0][0]-Kg[3][1]*Pcap[1][0]-Kg[3][2]*Pcap[2][0]+_1mKg33*Pcap[3][0];
+ 	P[3][1] = -Kg[3][0]*Pcap[0][1]-Kg[3][1]*Pcap[1][1]-Kg[3][2]*Pcap[2][1]+_1mKg33*Pcap[3][1];
+ 	P[3][2] = -Kg[3][0]*Pcap[0][2]-Kg[3][1]*Pcap[1][2]-Kg[3][2]*Pcap[2][2]+_1mKg33*Pcap[3][2];
+ 	P[3][3] = -Kg[3][0]*Pcap[0][3]-Kg[3][1]*Pcap[1][3]-Kg[3][2]*Pcap[2][3]+_1mKg33*Pcap[3][3];
 
  	q.Normalise();
  	return true;
