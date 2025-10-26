@@ -31,8 +31,8 @@ Quaternion q;
           .
 int main(void)
 {
-	  float accelX, accelY, accelZ, gyroX, gyroY, gyroZ;
-	  uint8_t ahrsComputeSuccess = 0;
+	float accelX, accelY, accelZ, gyroX, gyroY, gyroZ;
+	uint8_t ahrsComputeSuccess = 0;
           .
           .
     funcToInitialiseIMU();
@@ -42,6 +42,40 @@ int main(void)
         funcToReadIMUData(accelX, accelY, accelZ, gyroX, gyroY, gyroZ);
         // accelerometer readings should be in m/s^2 and gyro should be in degrees per second
 			  ahrsComputeSuccess = ahrs.Run(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, 0, 0,0);
+        if (ahrsComputeSuccess) {
+            ahrs.GetOrientation(q);
+            ahrsComputeSuccess = 0;
+        }
+    }
+}
+```
+### Note:
+When using only accelerometer and gyroscope,the z component of the quaternion is not calculated.
+
+### Using only Accelerometer, Gyroscope and Magnetometer
+```cpp
+#include "ExtendedKalmanFilter.hpp"
+          .
+          .
+#define IMU_SAMPLING_FREQ 416.0f
+ExtendedKalmanFilter ahrs;
+Quaternion q;
+          .
+          .
+int main(void)
+{
+	float accelX, accelY, accelZ, gyroX, gyroY, gyroZ, magX, magY, magZ;
+	uint8_t ahrsComputeSuccess = 0;
+          .
+          .
+    funcToInitialiseIMU();
+    ahrs.SetSampleTime(IMU_SAMPLING_FREQ);
+          .
+          .
+    if (imuDataAvailable()) {
+        funcToReadIMUData(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, magX, magY, magZ);
+        // accelerometer readings should be in m/s^2 and gyro should be in degrees per second
+		ahrsComputeSuccess = ahrs.Run(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, magX, magY, magZ);
         if (ahrsComputeSuccess) {
             ahrs.GetOrientation(q);
             ahrsComputeSuccess = 0;
