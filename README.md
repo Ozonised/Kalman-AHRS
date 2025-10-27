@@ -1,7 +1,7 @@
 # KALMAN-AHRS
 ![](https://github.com/Ozonised/Kalman-AHRS/blob/main/testKalman.gif)
 
-An qunaternion based Extended Kalman Filter Attitude Heading and Reference System (AHRS).
+A quaternion based Extended Kalman Filter Attitude Heading and Reference System (AHRS).
 
 ## How to use:
 1. Include the following source files into your project directory:
