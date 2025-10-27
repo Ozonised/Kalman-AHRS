@@ -95,3 +95,8 @@ int main(void)
 ## Memory Usage
 - The ```ahrs``` object consumes around - ```572``` bytes.
 - ```bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)``` consumes around - ```352``` bytes.
+
+## Reference:
+This project would not have been made possible without the awesome documentation at:
+- https://ahrs.readthedocs.io/en/latest/filters/ekf.html
+- https://ahrs.readthedocs.io/en/latest/filters/fkf.html
