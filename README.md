@@ -22,6 +22,7 @@ Quaternion q;
 ### Additional Functions:
 - ```void SetGyroNoise(float NoiseX, float NoiseY, float NoiseZ);``` Sets the gyro noise covariance
 - ```void SetR(float NoiseAx, float NoiseAy, float NoiseAz, float NoiseMx, float NoiseMy, float NoiseMz);``` Sets the Measurement Noise Covariance Matrix
+- ```void SetP(float P00, float P11, float P22, float P33);``` Sets the estimated state covariance matrix
 
 ## Example:
 ### Using only Accelerometer and Gyroscope
