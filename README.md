@@ -40,10 +40,12 @@ int main(void)
 	float accelX, accelY, accelZ, gyroX, gyroY, gyroZ;
 	uint8_t ahrsComputeSuccess = 0;
           .
-          .
     funcToInitialiseIMU();
+          .
+          .
     ahrs.SetSampleTime(IMU_SAMPLING_FREQ);
-
+          .
+          .
     if (imuDataAvailable()) {
         funcToReadIMUData(accelX, accelY, accelZ, gyroX, gyroY, gyroZ);
         // accelerometer readings should be in m/s^2 and gyro should be in degrees per second
@@ -73,8 +75,9 @@ int main(void)
 	float accelX, accelY, accelZ, gyroX, gyroY, gyroZ, magX, magY, magZ;
 	uint8_t ahrsComputeSuccess = 0;
           .
-          .
     funcToInitialiseIMU();
+          .
+          .
     ahrs.SetSampleTime(IMU_SAMPLING_FREQ);
           .
           .
