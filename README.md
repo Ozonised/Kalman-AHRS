@@ -18,6 +18,10 @@ Quaternion q;
 4. Use ```ahrs.Run(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, magX, magY, magZ);``` to compute the orientation quaternion.
 5. Use ```ahrs.GetOrientation(q)``` to get the orientation quaternion.
 
+### Additional Functions:
+- ```void SetGyroNoise(float NoiseX, float NoiseY, float NoiseZ);``` Sets the gyro noise covariance
+- ```void SetR(float NoiseAx, float NoiseAy, float NoiseAz, float NoiseMx, float NoiseMy, float NoiseMz);``` Sets the Measurement Noise Covariance Matrix
+
 ## Example:
 ### Using only Accelerometer and Gyroscope
 ```cpp
@@ -74,7 +78,7 @@ int main(void)
           .
     if (imuDataAvailable()) {
         funcToReadIMUData(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, magX, magY, magZ);
-        // accelerometer readings should be in m/s^2 and gyro should be in degrees per second
+        // accelerometer readings should be in m/s^2, gyro should be in degrees per second and magnetometer should be in uT
 		ahrsComputeSuccess = ahrs.Run(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, magX, magY, magZ);
         if (ahrsComputeSuccess) {
             ahrs.GetOrientation(q);
@@ -85,4 +89,4 @@ int main(void)
 ```
 ## Memory Usage
 - The ```ahrs``` object consumes around - ```572``` bytes.
-- ```bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)``` consumes around - ```352``` bytes.
+- ```bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)``` consumes around - ```352``` bytes.
