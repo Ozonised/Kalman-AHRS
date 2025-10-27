@@ -101,7 +101,7 @@ void ExtendedKalmanFilter::SetR(float NoiseAx, float NoiseAy, float NoiseAz,
   * @note This function updates only the diagonal elements of matrix P.
   *       Off-diagonal elements remain unchanged.
   */
-void SetP(float P00, float P11, float P22, float P33)
+void ExtendedKalmanFilter::SetP(float P00, float P11, float P22, float P33)
 {
 	P[0][0] = P00;
 	P[1][1] = P11;
