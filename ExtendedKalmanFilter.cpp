@@ -90,6 +90,26 @@ void ExtendedKalmanFilter::SetR(float NoiseAx, float NoiseAy, float NoiseAz,
 }
 
 /**
+  * @brief  Sets the diagonal elements of the estimated state covariance matrix.
+  * @param[in]  P00  element P[0][0] (variance of first state component).
+  * @param[in]  P11  element P[1][1] (variance of second state component).
+  * @param[in]  P22  element P[2][2] (variance of third state component).
+  * @param[in]  P33  element P[3][3] (variance of fourth state component).
+  *
+  * @return None
+  *
+  * @note This function updates only the diagonal elements of matrix P.
+  *       Off-diagonal elements remain unchanged.
+  */
+void SetP(float P00, float P11, float P22, float P33)
+{
+	P[0][0] = P00;
+	P[1][1] = P11;
+	P[2][2] = P22;
+	P[3][3] = P33;
+}
+
+/**
  * @brief Executes one iteration of the Extended Kalman Filter to estimate orientation.
  *
  * This function performs both the prediction and update steps of the
