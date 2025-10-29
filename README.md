@@ -49,7 +49,7 @@ int main(void)
     if (imuDataAvailable()) {
         funcToReadIMUData(accelX, accelY, accelZ, gyroX, gyroY, gyroZ);
         // accelerometer readings should be in m/s^2 and gyro should be in degrees per second
-			  ahrsComputeSuccess = ahrs.Run(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, 0, 0,0);
+		ahrsComputeSuccess = ahrs.Run(accelX, accelY, accelZ, gyroX, gyroY, gyroZ);
         if (ahrsComputeSuccess) {
             ahrs.GetOrientation(q);
             ahrsComputeSuccess = 0;
