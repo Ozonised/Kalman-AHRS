@@ -132,7 +132,6 @@ void ExtendedKalmanFilter::SetP(float P00, float P11, float P22, float P33)
  * @note
  * - The function assumes sensor axes are aligned and calibrated.
  * - Ensure a valid sampling time is set via `SetSampleTime()` before calling `Run()`.
- * - The Z component of the quaternion is not calculated if the magnetometer readings are not present
  */
 bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
@@ -377,9 +376,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
  	q.s = qcap.s + (Kg[0][0]*v[0]+Kg[0][1]*v[1]+Kg[0][2]*v[2]+Kg[0][3]*v[3]);
  	q.x = qcap.x + (Kg[1][0]*v[0]+Kg[1][1]*v[1]+Kg[1][2]*v[2]+Kg[1][3]*v[3]);
  	q.y = qcap.y + (Kg[2][0]*v[0]+Kg[2][1]*v[1]+Kg[2][2]*v[2]+Kg[2][3]*v[3]);
-
- 	if (normM)
-		q.z = qcap.z + (Kg[3][0]*v[0]+Kg[3][1]*v[1]+Kg[3][2]*v[2]+Kg[3][3]*v[3]);
+	q.z = qcap.z + (Kg[3][0]*v[0]+Kg[3][1]*v[1]+Kg[3][2]*v[2]+Kg[3][3]*v[3]);
 
     // ============================================================
     // COVARIANCE UPDATE: P = (I4 - Kg) * Pcap
