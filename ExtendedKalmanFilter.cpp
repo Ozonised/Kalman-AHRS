@@ -141,15 +141,20 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 
 	if (!normM && !normA) return false;
 
+	if (fabs(normM) >= 0.00001f)
+	{
+		mx = mx / normM;	my = my / normM; mz = mz / normM;
+	}
+	else
+	{
+		Run(ax, ay, az, gx, gy, gz);
+	}
+
 	if (fabs(normA) >= 0.00001f)
 	{
 		ax = ax / normA;	ay = ay / normA;	az = az / normA;
 	}
 
-	if (fabs(normM) >= 0.00001f)
-	{
-		mx = mx / normM;	my = my / normM; mz = mz / normM;
-	}
 
     float mzp = mz + 1.0f;
     float mzm = mz - 1.0f;
@@ -408,6 +413,261 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 
  	q.Normalise();
  	return true;
+}
+
+bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy, float gz)
+{
+    // Normalize accelerometer reading
+    float normA = sqrtf(ax * ax + ay * ay + az * az);
+    if (fabs(normA) < 0.00001f)
+        return false;
+
+    ax /= normA;
+    ay /= normA;
+    az /= normA;
+
+    // Compute measurement quaternion qam using accelerometer only
+    // Here, assume qam aligns body z-axis with gravity vector (ax, ay, az)
+    float azp = az + 1.0f;
+    float azm = az - 1.0f;
+
+    qam.s = 0.25 * ( azp * q.s  +  ay * q.x  -  ax * q.y );
+    qam.x = 0.25 * ( ay * q.s  -  azm * q.x  +  ax * q.z );
+    qam.y = 0.25 * ( -ax * q.s  -  azm * q.y  +  ay * q.z );
+    qam.z = 0.25 * ( ax * q.x  +  ay * q.y  +  azp * q.z );
+
+    qam.Normalise();
+
+    // Convert gyro from degrees/s to radians/s
+    gx *= 0.01745f;
+    gy *= 0.01745f;
+    gz *= 0.01745f;
+
+    // ============================================================
+    // PREDICTION STEP - Using gyroscope
+    // ============================================================
+
+   	// Fill F
+    F[0][0] = 1.0;       F[0][1] = -dt2 * gx;  	F[0][2] = -dt2 * gy;  	F[0][3] = -dt2 * gz;
+    F[1][0] = dt2 * gx;  F[1][1] = 1.0;         F[1][2] = dt2 * gz;   	F[1][3] = F[0][2];
+    F[2][0] = dt2 * gy;  F[2][1] = F[0][3]; 	F[2][2] = 1.0;          F[2][3] = F[1][0];
+    F[3][0] = F[1][2];  F[3][1] = F[2][0];  	F[3][2] = F[0][1];  	F[3][3] = 1.0;
+
+	qcap.s = q.s + (F[0][1]*q.x + F[0][2]*q.y + F[0][3]*q.z);
+	qcap.x = q.x + (F[1][0]*q.s + F[1][2]*q.y + F[0][2]*q.z);
+	qcap.y = q.y + (F[2][0]*q.s + F[1][0]*q.z + F[0][3]*q.x);
+	qcap.z = q.z + (F[1][2]*q.s + F[2][0]*q.x + F[0][1]*q.y);
+
+   	qcap.Normalise();
+
+   	// Process Noise Covariance: Pcap = FPFt + Q
+   	// FP = F * P
+       float FP[4][4] = {0};
+   	// Pcap = F * P
+   	for (uint8_t i = 0; i < 4; i++)
+   		for (uint8_t j = 0; j < 4; j++)
+   			for (uint8_t k = 0; k < 4; k++)
+   			{
+   				if (isnan(P[k][j]))
+   					return false;
+   				FP[i][j] += F[i][k] * P[k][j];
+   			}
+
+   	// Finally, Pcap = F*P*Ft + Q
+   	for (uint8_t i = 0; i < 4; i++)
+   		for (uint8_t j = 0; j < 4; j++)
+   		{
+   			Pcap[i][j] = 0;
+   			for (uint8_t k = 0; k < 4; k++)
+   				Pcap[i][j] += FP[i][k] * F[j][k];
+   			if (isnan(P[i][j]))
+   				return false;
+   		}
+
+   	Q[0][0] = q.x*SigmaOmega[0]*q.x+q.y*SigmaOmega[1]*q.y+q.z*SigmaOmega[2]*q.z;
+   	Q[0][1] = q.x*SigmaOmega[0]*-q.s+q.y*SigmaOmega[1]*-q.z+q.z*SigmaOmega[2]*q.y;
+   	Q[0][2] = q.x*SigmaOmega[0]*q.z+q.y*SigmaOmega[1]*-q.s+q.z*SigmaOmega[2]*-q.x;
+   	Q[0][3] = q.x*SigmaOmega[0]*-q.y+q.y*SigmaOmega[1]*q.x+q.z*SigmaOmega[2]*-q.s;
+   	Q[1][0] = -q.s*SigmaOmega[0]*q.x-q.z*SigmaOmega[1]*q.y+q.y*SigmaOmega[2]*q.z;
+   	Q[1][1] = -q.s*SigmaOmega[0]*-q.s-q.z*SigmaOmega[1]*-q.z+q.y*SigmaOmega[2]*q.y;
+   	Q[1][2] = -q.s*SigmaOmega[0]*q.z-q.z*SigmaOmega[1]*-q.s+q.y*SigmaOmega[2]*-q.x;
+   	Q[1][3] = -q.s*SigmaOmega[0]*-q.y-q.z*SigmaOmega[1]*q.x+q.y*SigmaOmega[2]*-q.s;
+   	Q[2][0] = q.z*SigmaOmega[0]*q.x-q.s*SigmaOmega[1]*q.y-q.x*SigmaOmega[2]*q.z;
+   	Q[2][1] = q.z*SigmaOmega[0]*-q.s-q.s*SigmaOmega[1]*-q.z-q.x*SigmaOmega[2]*q.y;
+   	Q[2][2] = q.z*SigmaOmega[0]*q.z-q.s*SigmaOmega[1]*-q.s-q.x*SigmaOmega[2]*-q.x;
+   	Q[2][3] = q.z*SigmaOmega[0]*-q.y-q.s*SigmaOmega[1]*q.x-q.x*SigmaOmega[2]*-q.s;
+   	Q[3][0] = -q.y*SigmaOmega[0]*q.x+q.x*SigmaOmega[1]*q.y-q.s*SigmaOmega[2]*q.z;
+   	Q[3][1] = -q.y*SigmaOmega[0]*-q.s+q.x*SigmaOmega[1]*-q.z-q.s*SigmaOmega[2]*q.y;
+   	Q[3][2] = -q.y*SigmaOmega[0]*q.z+q.x*SigmaOmega[1]*-q.s-q.s*SigmaOmega[2]*-q.x;
+   	Q[3][3] = -q.y*SigmaOmega[0]*-q.y+q.x*SigmaOmega[1]*q.x-q.s*SigmaOmega[2]*-q.s;
+
+
+   	Pcap[0][0] += Q[0][0];	Pcap[0][1] += Q[0][1]; Pcap[0][2] += Q[0][2]; Pcap[0][3] += Q[0][3];
+   	Pcap[1][0] += Q[1][0];	Pcap[1][1] += Q[1][1]; Pcap[1][2] += Q[1][2]; Pcap[1][3] += Q[1][3];
+   	Pcap[2][0] += Q[2][0];	Pcap[2][1] += Q[2][1]; Pcap[2][2] += Q[2][2]; Pcap[2][3] += Q[2][3];
+   	Pcap[3][0] += Q[3][0];	Pcap[3][1] += Q[3][1]; Pcap[3][2] += Q[3][2]; Pcap[3][3] += Q[3][3];
+
+    // ============================================================
+    // CORRECTION MODEL
+    // ============================================================
+
+   	// without the magnetometer J becomes a 4x3 matrix
+   	J[0][0] = 0.25f *  -q.y;
+   	J[0][1] = 0.25f * q.x;
+   	J[0][2] = 0.25f * q.s;
+
+   	J[1][0] = 0.25f * q.z;
+   	J[1][1] = 0.25f * q.s;
+   	J[1][2] = 0.25f * -q.x;
+
+   	J[2][0] = 0.25f * -q.s;
+   	J[2][1] = 0.25f * q.z;
+   	J[2][2] = 0.25f * -q.y;
+
+   	J[3][0] = 0.25f * q.x;
+   	J[3][1] = 0.25f * q.y;
+   	J[3][2] = 0.25f * q.z;
+
+
+	JRJt[0][0] = J[0][0]*R[0]*J[0][0]+J[0][1]*R[1]*J[0][1]+J[0][2]*R[2]*J[0][2];
+	JRJt[0][1] = J[0][0]*R[0]*J[1][0]+J[0][1]*R[1]*J[1][1]+J[0][2]*R[2]*J[1][2];
+	JRJt[0][2] = J[0][0]*R[0]*J[2][0]+J[0][1]*R[1]*J[2][1]+J[0][2]*R[2]*J[2][2];
+
+	JRJt[1][0] = J[1][0]*R[0]*J[0][0]+J[1][1]*R[1]*J[0][1]+J[1][2]*R[2]*J[0][2];
+	JRJt[1][1] = J[1][0]*R[0]*J[1][0]+J[1][1]*R[1]*J[1][1]+J[1][2]*R[2]*J[1][2];
+	JRJt[1][2] = J[1][0]*R[0]*J[2][0]+J[1][1]*R[1]*J[2][1]+J[1][2]*R[2]*J[2][2];
+
+	JRJt[2][0] = J[2][0]*R[0]*J[0][0]+J[2][1]*R[1]*J[0][1]+J[2][2]*R[2]*J[0][2];
+	JRJt[2][1] = J[2][0]*R[0]*J[1][0]+J[2][1]*R[1]*J[1][1]+J[2][2]*R[2]*J[1][2];
+	JRJt[2][2] = J[2][0]*R[0]*J[2][0]+J[2][1]*R[1]*J[2][1]+J[2][2]*R[2]*J[2][2];
+
+	JRJt[3][0] = J[3][0]*R[0]*J[0][0]+J[3][1]*R[1]*J[0][1]+J[3][2]*R[2]*J[0][2];
+	JRJt[3][1] = J[3][0]*R[0]*J[1][0]+J[3][1]*R[1]*J[1][1]+J[3][2]*R[2]*J[1][2];
+	JRJt[3][2] = J[3][0]*R[0]*J[2][0]+J[3][1]*R[1]*J[2][1]+J[3][2]*R[2]*J[2][2];
+
+
+	// ============================================================
+	// KALMAN GAIN: Kg = Pcap * S^-1 (4x4 matrix)
+	// ============================================================
+
+	float S[4][4] = { 0 }, Sinv[4][4] = { 0 };
+	// here S = Pcap + JRJt
+	for (uint8_t i = 0; i < 4; ++i)
+		for (uint8_t j = 0; j < 4; ++j)
+			S[i][j] = Pcap[i][j] + JRJt[i][j];
+
+	// ============================================================
+	// MATRIX INVERSION - Compute S^-1
+	// ============================================================
+
+	// calculating inverse of S matrix, using LU decomposition
+	// S * S^-1 = I, using LU decomposition S = LU
+	for (uint8_t p = 0; p < 4; ++p)
+	{
+		if (fabs(S[p][p]) < 1e-6f)
+			return false;
+
+		for (uint8_t i = p + 1; i < 4; ++i)
+		{
+			//updating the l matrix :l[ur][p]
+			S[i][p] /= S[p][p];
+			for (uint8_t j = p + 1; j < 4; ++j)
+				S[i][j] -= S[i][p] * S[p][j];
+		}
+	}
+
+	// L * U * S^-1 = I, now let U * S^-1 = Y
+	// therefore, L * Y = I
+	for (uint8_t col = 0; col < 4; ++col)
+	{
+		float Y[4] = {0};
+		float Icol[4] = {0};
+		Icol[col] = 1.0f;
+
+		// Forward substitution: L * Y = Icol
+		float sum = 0;
+		int8_t i = 0, j = 0;
+		for (i = 0; i < 4; ++i)
+		{
+			sum = 0;
+			for (j = 0; j < i; ++j)
+				sum += S[i][j] * Y[j];
+			Y[i] = Icol[i] - sum;
+		}
+
+		// Back substitution: U * X = Y, here X = one column of S^-1 (Sinv)
+		for (i = 3; i >= 0; --i)
+		{
+			sum = 0;
+			for (j = i + 1; j < 4; ++j)
+				sum += S[i][j] * Sinv[j][col];
+
+			if (fabs(S[i][i]) < 1e-6f)
+				return false;
+
+			Sinv[i][col] = (Y[i] - sum) / S[i][i];
+		}
+	}
+
+
+	// Kg = Pcap * S^-1(Sinv)
+	// here, Kg = Pcap * Sinv
+	for (uint8_t m = 0; m < 4; m++)
+		for (uint8_t p = 0; p < 4; p++)
+		{
+			Kg[m][p] = 0;
+			for (uint8_t n = 0; n < 4; n++)
+				Kg[m][p] += Pcap[m][n] * Sinv[n][p];
+			if (isnan(Kg[m][p]))
+				return false;
+		}
+
+	// ============================================================
+	// STATE CORRECTION: q = qcap + Kg (qam - qcap)
+	// ============================================================
+
+	// Correction: q = qcap + Kg (qam - qcap), here v = qam - q
+	float v[4];
+	v[0] = qam.s - q.s;
+	v[1] = qam.x - q.x;
+	v[2] = qam.y - q.y;
+	v[3] = qam.z - q.z;
+
+	q.s = qcap.s + (Kg[0][0]*v[0]+Kg[0][1]*v[1]+Kg[0][2]*v[2]+Kg[0][3]*v[3]);
+	q.x = qcap.x + (Kg[1][0]*v[0]+Kg[1][1]*v[1]+Kg[1][2]*v[2]+Kg[1][3]*v[3]);
+	q.y = qcap.y + (Kg[2][0]*v[0]+Kg[2][1]*v[1]+Kg[2][2]*v[2]+Kg[2][3]*v[3]);
+	q.z = qcap.z + (Kg[3][0]*v[0]+Kg[3][1]*v[1]+Kg[3][2]*v[2]+Kg[3][3]*v[3]);
+
+	// ============================================================
+	// COVARIANCE UPDATE: P = (I4 - Kg) * Pcap
+	// ============================================================
+
+	// P = (I4 - Kg) * Pcap
+	float _1mKg00 = 1.0f - Kg[0][0];
+	float _1mKg11 = 1.0f - Kg[1][1];
+	float _1mKg22 = 1.0f - Kg[2][2];
+	float _1mKg33 = 1.0f - Kg[3][3];
+
+	// Now, P = I_Kg * Pcap
+	P[0][0] = _1mKg00*Pcap[0][0]-Kg[0][1]*Pcap[1][0]-Kg[0][2]*Pcap[2][0]-Kg[0][3]*Pcap[3][0];
+	P[0][1] = _1mKg00*Pcap[0][1]-Kg[0][1]*Pcap[1][1]-Kg[0][2]*Pcap[2][1]-Kg[0][3]*Pcap[3][1];
+	P[0][2] = _1mKg00*Pcap[0][2]-Kg[0][1]*Pcap[1][2]-Kg[0][2]*Pcap[2][2]-Kg[0][3]*Pcap[3][2];
+	P[0][3] = _1mKg00*Pcap[0][3]-Kg[0][1]*Pcap[1][3]-Kg[0][2]*Pcap[2][3]-Kg[0][3]*Pcap[3][3];
+	P[1][0] = -Kg[1][0]*Pcap[0][0]+_1mKg11*Pcap[1][0]-Kg[1][2]*Pcap[2][0]-Kg[1][3]*Pcap[3][0];
+	P[1][1] = -Kg[1][0]*Pcap[0][1]+_1mKg11*Pcap[1][1]-Kg[1][2]*Pcap[2][1]-Kg[1][3]*Pcap[3][1];
+	P[1][2] = -Kg[1][0]*Pcap[0][2]+_1mKg11*Pcap[1][2]-Kg[1][2]*Pcap[2][2]-Kg[1][3]*Pcap[3][2];
+	P[1][3] = -Kg[1][0]*Pcap[0][3]+_1mKg11*Pcap[1][3]-Kg[1][2]*Pcap[2][3]-Kg[1][3]*Pcap[3][3];
+	P[2][0] = -Kg[2][0]*Pcap[0][0]-Kg[2][1]*Pcap[1][0]+_1mKg22*Pcap[2][0]-Kg[2][3]*Pcap[3][0];
+	P[2][1] = -Kg[2][0]*Pcap[0][1]-Kg[2][1]*Pcap[1][1]+_1mKg22*Pcap[2][1]-Kg[2][3]*Pcap[3][1];
+	P[2][2] = -Kg[2][0]*Pcap[0][2]-Kg[2][1]*Pcap[1][2]+_1mKg22*Pcap[2][2]-Kg[2][3]*Pcap[3][2];
+	P[2][3] = -Kg[2][0]*Pcap[0][3]-Kg[2][1]*Pcap[1][3]+_1mKg22*Pcap[2][3]-Kg[2][3]*Pcap[3][3];
+	P[3][0] = -Kg[3][0]*Pcap[0][0]-Kg[3][1]*Pcap[1][0]-Kg[3][2]*Pcap[2][0]+_1mKg33*Pcap[3][0];
+	P[3][1] = -Kg[3][0]*Pcap[0][1]-Kg[3][1]*Pcap[1][1]-Kg[3][2]*Pcap[2][1]+_1mKg33*Pcap[3][1];
+	P[3][2] = -Kg[3][0]*Pcap[0][2]-Kg[3][1]*Pcap[1][2]-Kg[3][2]*Pcap[2][2]+_1mKg33*Pcap[3][2];
+	P[3][3] = -Kg[3][0]*Pcap[0][3]-Kg[3][1]*Pcap[1][3]-Kg[3][2]*Pcap[2][3]+_1mKg33*Pcap[3][3];
+
+	q.Normalise();
+	return true;
 }
 
 /**

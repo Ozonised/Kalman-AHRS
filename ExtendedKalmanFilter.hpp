@@ -32,6 +32,7 @@ class ExtendedKalmanFilter
 		void SetR(float NoiseAx, float NoiseAy, float NoiseAz, float NoiseMx, float NoiseMy, float NoiseMz);
 		void SetP(float P00, float P11, float P22, float P33);
 		bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz);
+		bool Run(float ax, float ay, float az, float gx, float gy, float gz);
 		void GetOrientation(Quaternion& qState);
 };
 
