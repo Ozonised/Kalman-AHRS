@@ -1,7 +1,7 @@
-# KALMAN-AHRS
+# KALMAN-AHRS-CPP
 ![](https://github.com/Ozonised/Kalman-AHRS/blob/main/testKalman.gif)
 
-A quaternion based Extended Kalman Filter Attitude Heading and Reference System (AHRS).
+A quaternion based Extended Kalman Filter for Attitude Heading and Reference System (AHRS) written in C++/Cpp.
 
 ## How to use:
 1. Include the following source files into your project directory:
