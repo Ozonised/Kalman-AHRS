@@ -52,6 +52,10 @@ void ExtendedKalmanFilter::SetSampleTime(float freq)
  * @param[in] NoiseZ  Gyroscope process noise variance along the Z-axis.
  *
  * @ return None
+ *
+ * @note
+ * - All noise values should be positive
+ * - Units are (rads/s)²
  */
 void ExtendedKalmanFilter::SetGyroNoise(float NoiseX, float NoiseY, float NoiseZ)
 {

@@ -49,7 +49,7 @@ int main(void)
     if (imuDataAvailable()) {
         funcToReadIMUData(accelX, accelY, accelZ, gyroX, gyroY, gyroZ);
         // accelerometer readings should be in m/s^2 and gyro should be in degrees per second
-			  ahrsComputeSuccess = ahrs.Run(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, 0, 0,0);
+		ahrsComputeSuccess = ahrs.Run(accelX, accelY, accelZ, gyroX, gyroY, gyroZ, 0, 0,0);
         if (ahrsComputeSuccess) {
             ahrs.GetOrientation(q);
             ahrsComputeSuccess = 0;
@@ -94,7 +94,8 @@ int main(void)
 ```
 ## Memory Usage
 - The ```ahrs``` object consumes around - ```572``` bytes.
-- ```bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)``` consumes around - ```352``` bytes.
+- ```bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)``` consumes around - ```368``` bytes.
+- ```bool Run(float ax, float ay, float az, float gx, float gy, float gz)``` consumes around - ```336``` bytes.
 
 ## Reference:
 This project would not have been made possible without the awesome documentation at:
