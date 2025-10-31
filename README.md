@@ -94,7 +94,7 @@ int main(void)
 ```
 ## Memory Usage
 - The ```ahrs``` object consumes around - ```572``` bytes.
-- ```bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)``` consumes around - ```368``` bytes.
+- ```bool Run(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)``` consumes around - ```376``` bytes.
 - ```bool Run(float ax, float ay, float az, float gx, float gy, float gz)``` consumes around - ```336``` bytes.
 
 ## Reference:
