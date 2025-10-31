@@ -149,10 +149,6 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	{
 		mx = mx / normM;	my = my / normM; mz = mz / normM;
 	}
-	else
-	{
-		Run(ax, ay, az, gx, gy, gz);
-	}
 
 	if (fabs(normA) >= 0.00001f)
 	{
