@@ -12,19 +12,19 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
 	P[3][3] = 0.6;
 
 	// default gyroscoppe noise
-	SigmaOmega[0] = 0.0025f;
-	SigmaOmega[1] = 0.0025f;
-	SigmaOmega[2] = 0.0025f;
+	SigmaOmega[0] = 0.09f;
+	SigmaOmega[1] = 0.09f;
+	SigmaOmega[2] = 0.09f;
 
 	// default accelerometer noise
-	R[0] =0.01;
-	R[1] =0.01;
-	R[2] =0.01;
+	R[0] = 0.25f;
+	R[1] = 0.25f;
+	R[2] = 0.25f;
 
 	// default magnetometer noise
-	R[3] = 0.1;
-	R[4] = 0.1;
-	R[5] = 0.1;
+	R[3] = 0.64;
+	R[4] = 0.64;
+	R[5] = 0.64;
 
 	magDeclination = 0;
 }
@@ -202,7 +202,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 				FP[i][j] += F[i][k] * P[k][j];
 			}
 
-	// Finally, Pcap = F*P*Ft + Q
+	// Pcap = F*P*Ft
 	for (uint8_t i = 0; i < 4; i++)
 		for (uint8_t j = 0; j < 4; j++)
 		{
@@ -213,24 +213,26 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 				return false;
 		}
 
-	Q[0][0] = q.x*SigmaOmega[0]*q.x+q.y*SigmaOmega[1]*q.y+q.z*SigmaOmega[2]*q.z;
-	Q[0][1] = q.x*SigmaOmega[0]*-q.s+q.y*SigmaOmega[1]*-q.z+q.z*SigmaOmega[2]*q.y;
-	Q[0][2] = q.x*SigmaOmega[0]*q.z+q.y*SigmaOmega[1]*-q.s+q.z*SigmaOmega[2]*-q.x;
-	Q[0][3] = q.x*SigmaOmega[0]*-q.y+q.y*SigmaOmega[1]*q.x+q.z*SigmaOmega[2]*-q.s;
-	Q[1][0] = -q.s*SigmaOmega[0]*q.x-q.z*SigmaOmega[1]*q.y+q.y*SigmaOmega[2]*q.z;
-	Q[1][1] = -q.s*SigmaOmega[0]*-q.s-q.z*SigmaOmega[1]*-q.z+q.y*SigmaOmega[2]*q.y;
-	Q[1][2] = -q.s*SigmaOmega[0]*q.z-q.z*SigmaOmega[1]*-q.s+q.y*SigmaOmega[2]*-q.x;
-	Q[1][3] = -q.s*SigmaOmega[0]*-q.y-q.z*SigmaOmega[1]*q.x+q.y*SigmaOmega[2]*-q.s;
-	Q[2][0] = q.z*SigmaOmega[0]*q.x-q.s*SigmaOmega[1]*q.y-q.x*SigmaOmega[2]*q.z;
-	Q[2][1] = q.z*SigmaOmega[0]*-q.s-q.s*SigmaOmega[1]*-q.z-q.x*SigmaOmega[2]*q.y;
-	Q[2][2] = q.z*SigmaOmega[0]*q.z-q.s*SigmaOmega[1]*-q.s-q.x*SigmaOmega[2]*-q.x;
-	Q[2][3] = q.z*SigmaOmega[0]*-q.y-q.s*SigmaOmega[1]*q.x-q.x*SigmaOmega[2]*-q.s;
-	Q[3][0] = -q.y*SigmaOmega[0]*q.x+q.x*SigmaOmega[1]*q.y-q.s*SigmaOmega[2]*q.z;
-	Q[3][1] = -q.y*SigmaOmega[0]*-q.s+q.x*SigmaOmega[1]*-q.z-q.s*SigmaOmega[2]*q.y;
-	Q[3][2] = -q.y*SigmaOmega[0]*q.z+q.x*SigmaOmega[1]*-q.s-q.s*SigmaOmega[2]*-q.x;
-	Q[3][3] = -q.y*SigmaOmega[0]*-q.y+q.x*SigmaOmega[1]*q.x-q.s*SigmaOmega[2]*-q.s;
+   	float dt2Squared = dt2 * dt2;
 
+   	Q[0][0] = dt2Squared * (qcap.x*SigmaOmega[0]*qcap.x+qcap.y*SigmaOmega[1]*qcap.y+qcap.z*SigmaOmega[2]*qcap.z);
+   	Q[0][1] = dt2Squared * (qcap.x*SigmaOmega[0]*-qcap.s+qcap.y*SigmaOmega[1]*-qcap.z+qcap.z*SigmaOmega[2]*qcap.y);
+   	Q[0][2] = dt2Squared * (qcap.x*SigmaOmega[0]*qcap.z+qcap.y*SigmaOmega[1]*-qcap.s+qcap.z*SigmaOmega[2]*-qcap.x);
+   	Q[0][3] = dt2Squared * (qcap.x*SigmaOmega[0]*-qcap.y+qcap.y*SigmaOmega[1]*qcap.x+qcap.z*SigmaOmega[2]*-qcap.s);
+   	Q[1][0] = dt2Squared * (-qcap.s*SigmaOmega[0]*qcap.x-qcap.z*SigmaOmega[1]*qcap.y+qcap.y*SigmaOmega[2]*qcap.z);
+   	Q[1][1] = dt2Squared * (-qcap.s*SigmaOmega[0]*-qcap.s-qcap.z*SigmaOmega[1]*-qcap.z+qcap.y*SigmaOmega[2]*qcap.y);
+   	Q[1][2] = dt2Squared * (-qcap.s*SigmaOmega[0]*qcap.z-qcap.z*SigmaOmega[1]*-qcap.s+qcap.y*SigmaOmega[2]*-qcap.x);
+   	Q[1][3] = dt2Squared * (-qcap.s*SigmaOmega[0]*-qcap.y-qcap.z*SigmaOmega[1]*qcap.x+qcap.y*SigmaOmega[2]*-qcap.s);
+   	Q[2][0] = dt2Squared * (qcap.z*SigmaOmega[0]*qcap.x-qcap.s*SigmaOmega[1]*qcap.y-qcap.x*SigmaOmega[2]*qcap.z);
+   	Q[2][1] = dt2Squared * (qcap.z*SigmaOmega[0]*-qcap.s-qcap.s*SigmaOmega[1]*-qcap.z-qcap.x*SigmaOmega[2]*qcap.y);
+   	Q[2][2] = dt2Squared * (qcap.z*SigmaOmega[0]*qcap.z-qcap.s*SigmaOmega[1]*-qcap.s-qcap.x*SigmaOmega[2]*-qcap.x);
+   	Q[2][3] = dt2Squared * (qcap.z*SigmaOmega[0]*-qcap.y-qcap.s*SigmaOmega[1]*qcap.x-qcap.x*SigmaOmega[2]*-qcap.s);
+   	Q[3][0] = dt2Squared * (-qcap.y*SigmaOmega[0]*qcap.x+qcap.x*SigmaOmega[1]*qcap.y-qcap.s*SigmaOmega[2]*qcap.z);
+   	Q[3][1] = dt2Squared * (-qcap.y*SigmaOmega[0]*-qcap.s+qcap.x*SigmaOmega[1]*-qcap.z-qcap.s*SigmaOmega[2]*qcap.y);
+   	Q[3][2] = dt2Squared * (-qcap.y*SigmaOmega[0]*qcap.z+qcap.x*SigmaOmega[1]*-qcap.s-qcap.s*SigmaOmega[2]*-qcap.x);
+   	Q[3][3] = dt2Squared * (-qcap.y*SigmaOmega[0]*-qcap.y+qcap.x*SigmaOmega[1]*qcap.x-qcap.s*SigmaOmega[2]*-qcap.s);
 
+   	// Finally, Pcap = F*P*Ft + Q
 	Pcap[0][0] += Q[0][0];	Pcap[0][1] += Q[0][1]; Pcap[0][2] += Q[0][2]; Pcap[0][3] += Q[0][3];
 	Pcap[1][0] += Q[1][0];	Pcap[1][1] += Q[1][1]; Pcap[1][2] += Q[1][2]; Pcap[1][3] += Q[1][3];
 	Pcap[2][0] += Q[2][0];	Pcap[2][1] += Q[2][1]; Pcap[2][2] += Q[2][2]; Pcap[2][3] += Q[2][3];
@@ -371,12 +373,12 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
     // STATE CORRECTION: q = qcap + Kg (qam - qcap)
     // ============================================================
 
-	// Correction: q = qcap + Kg (qam - qcap), here v = qam - q
+	// Correction: q = qcap + Kg (qam - qcap), here v = qam - qcap
  	float v[4];
- 	v[0] = qam.s - q.s;
- 	v[1] = qam.x - q.x;
- 	v[2] = qam.y - q.y;
- 	v[3] = qam.z - q.z;
+ 	v[0] = qam.s - qcap.s;
+ 	v[1] = qam.x - qcap.x;
+ 	v[2] = qam.y - qcap.y;
+ 	v[3] = qam.z - qcap.z;
 
  	q.s = qcap.s + (Kg[0][0]*v[0]+Kg[0][1]*v[1]+Kg[0][2]*v[2]+Kg[0][3]*v[3]);
  	q.x = qcap.x + (Kg[1][0]*v[0]+Kg[1][1]*v[1]+Kg[1][2]*v[2]+Kg[1][3]*v[3]);
@@ -473,7 +475,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
    				FP[i][j] += F[i][k] * P[k][j];
    			}
 
-   	// Finally, Pcap = F*P*Ft + Q
+   	// Pcap = F*P*Ft
    	for (uint8_t i = 0; i < 4; i++)
    		for (uint8_t j = 0; j < 4; j++)
    		{
@@ -484,24 +486,26 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
    				return false;
    		}
 
-   	Q[0][0] = q.x*SigmaOmega[0]*q.x+q.y*SigmaOmega[1]*q.y+q.z*SigmaOmega[2]*q.z;
-   	Q[0][1] = q.x*SigmaOmega[0]*-q.s+q.y*SigmaOmega[1]*-q.z+q.z*SigmaOmega[2]*q.y;
-   	Q[0][2] = q.x*SigmaOmega[0]*q.z+q.y*SigmaOmega[1]*-q.s+q.z*SigmaOmega[2]*-q.x;
-   	Q[0][3] = q.x*SigmaOmega[0]*-q.y+q.y*SigmaOmega[1]*q.x+q.z*SigmaOmega[2]*-q.s;
-   	Q[1][0] = -q.s*SigmaOmega[0]*q.x-q.z*SigmaOmega[1]*q.y+q.y*SigmaOmega[2]*q.z;
-   	Q[1][1] = -q.s*SigmaOmega[0]*-q.s-q.z*SigmaOmega[1]*-q.z+q.y*SigmaOmega[2]*q.y;
-   	Q[1][2] = -q.s*SigmaOmega[0]*q.z-q.z*SigmaOmega[1]*-q.s+q.y*SigmaOmega[2]*-q.x;
-   	Q[1][3] = -q.s*SigmaOmega[0]*-q.y-q.z*SigmaOmega[1]*q.x+q.y*SigmaOmega[2]*-q.s;
-   	Q[2][0] = q.z*SigmaOmega[0]*q.x-q.s*SigmaOmega[1]*q.y-q.x*SigmaOmega[2]*q.z;
-   	Q[2][1] = q.z*SigmaOmega[0]*-q.s-q.s*SigmaOmega[1]*-q.z-q.x*SigmaOmega[2]*q.y;
-   	Q[2][2] = q.z*SigmaOmega[0]*q.z-q.s*SigmaOmega[1]*-q.s-q.x*SigmaOmega[2]*-q.x;
-   	Q[2][3] = q.z*SigmaOmega[0]*-q.y-q.s*SigmaOmega[1]*q.x-q.x*SigmaOmega[2]*-q.s;
-   	Q[3][0] = -q.y*SigmaOmega[0]*q.x+q.x*SigmaOmega[1]*q.y-q.s*SigmaOmega[2]*q.z;
-   	Q[3][1] = -q.y*SigmaOmega[0]*-q.s+q.x*SigmaOmega[1]*-q.z-q.s*SigmaOmega[2]*q.y;
-   	Q[3][2] = -q.y*SigmaOmega[0]*q.z+q.x*SigmaOmega[1]*-q.s-q.s*SigmaOmega[2]*-q.x;
-   	Q[3][3] = -q.y*SigmaOmega[0]*-q.y+q.x*SigmaOmega[1]*q.x-q.s*SigmaOmega[2]*-q.s;
+   	float dt2Squared = dt2 * dt2;
 
+   	Q[0][0] = dt2Squared * (qcap.x*SigmaOmega[0]*qcap.x+qcap.y*SigmaOmega[1]*qcap.y+qcap.z*SigmaOmega[2]*qcap.z);
+   	Q[0][1] = dt2Squared * (qcap.x*SigmaOmega[0]*-qcap.s+qcap.y*SigmaOmega[1]*-qcap.z+qcap.z*SigmaOmega[2]*qcap.y);
+   	Q[0][2] = dt2Squared * (qcap.x*SigmaOmega[0]*qcap.z+qcap.y*SigmaOmega[1]*-qcap.s+qcap.z*SigmaOmega[2]*-qcap.x);
+   	Q[0][3] = dt2Squared * (qcap.x*SigmaOmega[0]*-qcap.y+qcap.y*SigmaOmega[1]*qcap.x+qcap.z*SigmaOmega[2]*-qcap.s);
+   	Q[1][0] = dt2Squared * (-qcap.s*SigmaOmega[0]*qcap.x-qcap.z*SigmaOmega[1]*qcap.y+qcap.y*SigmaOmega[2]*qcap.z);
+   	Q[1][1] = dt2Squared * (-qcap.s*SigmaOmega[0]*-qcap.s-qcap.z*SigmaOmega[1]*-qcap.z+qcap.y*SigmaOmega[2]*qcap.y);
+   	Q[1][2] = dt2Squared * (-qcap.s*SigmaOmega[0]*qcap.z-qcap.z*SigmaOmega[1]*-qcap.s+qcap.y*SigmaOmega[2]*-qcap.x);
+   	Q[1][3] = dt2Squared * (-qcap.s*SigmaOmega[0]*-qcap.y-qcap.z*SigmaOmega[1]*qcap.x+qcap.y*SigmaOmega[2]*-qcap.s);
+   	Q[2][0] = dt2Squared * (qcap.z*SigmaOmega[0]*qcap.x-qcap.s*SigmaOmega[1]*qcap.y-qcap.x*SigmaOmega[2]*qcap.z);
+   	Q[2][1] = dt2Squared * (qcap.z*SigmaOmega[0]*-qcap.s-qcap.s*SigmaOmega[1]*-qcap.z-qcap.x*SigmaOmega[2]*qcap.y);
+   	Q[2][2] = dt2Squared * (qcap.z*SigmaOmega[0]*qcap.z-qcap.s*SigmaOmega[1]*-qcap.s-qcap.x*SigmaOmega[2]*-qcap.x);
+   	Q[2][3] = dt2Squared * (qcap.z*SigmaOmega[0]*-qcap.y-qcap.s*SigmaOmega[1]*qcap.x-qcap.x*SigmaOmega[2]*-qcap.s);
+   	Q[3][0] = dt2Squared * (-qcap.y*SigmaOmega[0]*qcap.x+qcap.x*SigmaOmega[1]*qcap.y-qcap.s*SigmaOmega[2]*qcap.z);
+   	Q[3][1] = dt2Squared * (-qcap.y*SigmaOmega[0]*-qcap.s+qcap.x*SigmaOmega[1]*-qcap.z-qcap.s*SigmaOmega[2]*qcap.y);
+   	Q[3][2] = dt2Squared * (-qcap.y*SigmaOmega[0]*qcap.z+qcap.x*SigmaOmega[1]*-qcap.s-qcap.s*SigmaOmega[2]*-qcap.x);
+   	Q[3][3] = dt2Squared * (-qcap.y*SigmaOmega[0]*-qcap.y+qcap.x*SigmaOmega[1]*qcap.x-qcap.s*SigmaOmega[2]*-qcap.s);
 
+   	// Finally, Pcap = F*P*Ft + Q
    	Pcap[0][0] += Q[0][0];	Pcap[0][1] += Q[0][1]; Pcap[0][2] += Q[0][2]; Pcap[0][3] += Q[0][3];
    	Pcap[1][0] += Q[1][0];	Pcap[1][1] += Q[1][1]; Pcap[1][2] += Q[1][2]; Pcap[1][3] += Q[1][3];
    	Pcap[2][0] += Q[2][0];	Pcap[2][1] += Q[2][1]; Pcap[2][2] += Q[2][2]; Pcap[2][3] += Q[2][3];
@@ -626,12 +630,12 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	// STATE CORRECTION: q = qcap + Kg (qam - qcap)
 	// ============================================================
 
-	// Correction: q = qcap + Kg (qam - qcap), here v = qam - q
+	// Correction: q = qcap + Kg (qam - qcap), here v = qam - qcap
 	float v[4];
-	v[0] = qam.s - q.s;
-	v[1] = qam.x - q.x;
-	v[2] = qam.y - q.y;
-	v[3] = qam.z - q.z;
+ 	v[0] = qam.s - qcap.s;
+ 	v[1] = qam.x - qcap.x;
+ 	v[2] = qam.y - qcap.y;
+ 	v[3] = qam.z - qcap.z;
 
 	q.s = qcap.s + (Kg[0][0]*v[0]+Kg[0][1]*v[1]+Kg[0][2]*v[2]+Kg[0][3]*v[3]);
 	q.x = qcap.x + (Kg[1][0]*v[0]+Kg[1][1]*v[1]+Kg[1][2]*v[2]+Kg[1][3]*v[3]);
