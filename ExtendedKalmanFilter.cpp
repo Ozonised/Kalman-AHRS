@@ -311,8 +311,8 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	// S * S^-1 = I, using LU decomposition S = LU
 	for (uint8_t p = 0; p < 4; ++p)
 	{
-		if (fabs(S[p][p]) < 1e-6f)
-			return false;
+		if (fabs(S[p][p]) < 1e-7f)
+			S[p][p] += 1e-7f;
 
 		for (uint8_t i = p + 1; i < 4; ++i)
 		{
@@ -349,8 +349,8 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 			for (j = i + 1; j < 4; ++j)
 				sum += S[i][j] * Sinv[j][col];
 
-			if (fabs(S[i][i]) < 1e-6f)
-				return false;
+			if (fabs(S[i][i]) < 1e-7f)
+				S[i][i] += 1e-7f;
 
 			Sinv[i][col] = (Y[i] - sum) / S[i][i];
 		}
@@ -568,8 +568,8 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	// S * S^-1 = I, using LU decomposition S = LU
 	for (uint8_t p = 0; p < 4; ++p)
 	{
-		if (fabs(S[p][p]) < 1e-6f)
-			return false;
+		if (fabs(S[p][p]) < 1e-7f)
+			S[p][p] += 1e-7f;
 
 		for (uint8_t i = p + 1; i < 4; ++i)
 		{
@@ -606,8 +606,8 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 			for (j = i + 1; j < 4; ++j)
 				sum += S[i][j] * Sinv[j][col];
 
-			if (fabs(S[i][i]) < 1e-6f)
-				return false;
+			if (fabs(S[i][i]) < 1e-7f)
+				S[i][i] += 1e-7f;
 
 			Sinv[i][col] = (Y[i] - sum) / S[i][i];
 		}
