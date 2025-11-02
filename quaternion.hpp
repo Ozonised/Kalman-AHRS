@@ -20,11 +20,12 @@ class Quaternion
 		{
 
 		}
-
 		float GetNorm();
 		void Normalise();
 		void Conjugate();
 		void Inverse();
+		void EulerToQuat(float roll, float pitch, float yaw);
+		void QuatToEuler(float& roll, float& pitch, float& yaw);
 };
 
 #endif /* QUATERNION_H_ */

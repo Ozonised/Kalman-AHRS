@@ -101,3 +101,4 @@ int main(void)
 This project would not have been made possible without the awesome documentation at:
 - https://ahrs.readthedocs.io/en/latest/filters/ekf.html
 - https://ahrs.readthedocs.io/en/latest/filters/fkf.html
+- https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
