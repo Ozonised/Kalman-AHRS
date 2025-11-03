@@ -25,7 +25,7 @@ class Quaternion
 		void Conjugate();
 		void Inverse();
 		void EulerToQuat(float roll, float pitch, float yaw);
-		void QuatToEuler(float& roll, float& pitch, float& yaw);
+		void QuatToEuler(float& roll, float& pitch, float& yaw, bool inDegrees = 0);
 };
 
 #endif /* QUATERNION_H_ */

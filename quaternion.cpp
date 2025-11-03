@@ -69,9 +69,10 @@ void Quaternion::EulerToQuat(float roll, float pitch, float yaw)
 /**
  * @brief Retrieves the Euler angles in Z-Y-X sequence from quaternion object
  *
- * @param[out] roll roll angle in radians
- * @param[out] pitch pitch angle in radians
- * @param[out] yaw yaw angle in radians
+ * @param[out] roll roll angle in radians/Degrees
+ * @param[out] pitch pitch angle in radians/Degrees
+ * @param[out] yaw yaw angle in radians/Degrees
+ * @param[in] inDegrees angle unit: 1 = degrees & 0 = radians (default)
  *
  * @return None
  *
@@ -81,7 +82,7 @@ void Quaternion::EulerToQuat(float roll, float pitch, float yaw)
  * 		- Can Gimbal lock
  * 		- Refer: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
  */
-void Quaternion::QuatToEuler(float& roll, float& pitch, float& yaw)
+void Quaternion::QuatToEuler(float& roll, float& pitch, float& yaw, bool inDegrees)
 {
     // roll (x-axis rotation)
     float sinr_cosp = 2.0f * (s * x + y * z);
@@ -96,4 +97,11 @@ void Quaternion::QuatToEuler(float& roll, float& pitch, float& yaw)
     float siny_cosp = 2.0f * (s * z + x * y);
     float cosy_cosp = 1.0f - 2.0f * (y * y + z * z);
     yaw = atan2(siny_cosp, cosy_cosp);
+
+    if (inDegrees)
+    {
+		roll *= 57.29578f;
+		pitch *= 57.29578f;
+		yaw *= 57.29578f;
+    }
 }
