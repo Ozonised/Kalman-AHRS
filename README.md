@@ -5,8 +5,8 @@ A quaternion based Extended Kalman Filter for Attitude Heading and Reference Sys
 
 ## How to use:
 1. Include the following source files into your project directory:
-  - [qunaterion.hpp](quaternion.hpp)
-  - [qunaterion.cpp](quaternion.cpp)
+  - [quaterion.hpp](quaternion.hpp)
+  - [quaterion.cpp](quaternion.cpp)
   - [ExtendedKalmanFilter.hpp](ExtendedKalmanFilter.hpp)
   - [ExtendedKalmanFilter.cpp](ExtendedKalmanFilter.cpp)
 
