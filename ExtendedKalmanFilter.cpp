@@ -312,7 +312,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	for (uint8_t p = 0; p < 4; ++p)
 	{
 		if (fabs(S[p][p]) < 1e-7f)
-			S[p][p] += 1e-7f;
+			S[p][p] += copysignf(1e-7f, S[p][p]);
 
 		for (uint8_t i = p + 1; i < 4; ++i)
 		{
@@ -350,7 +350,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 				sum += S[i][j] * Sinv[j][col];
 
 			if (fabs(S[i][i]) < 1e-7f)
-				S[i][i] += 1e-7f;
+				S[i][i] += copysignf(1e-7f, S[i][i]);
 
 			Sinv[i][col] = (Y[i] - sum) / S[i][i];
 		}
@@ -569,7 +569,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 	for (uint8_t p = 0; p < 4; ++p)
 	{
 		if (fabs(S[p][p]) < 1e-7f)
-			S[p][p] += 1e-7f;
+			S[p][p] += copysignf(1e-7f, S[p][p]);
 
 		for (uint8_t i = p + 1; i < 4; ++i)
 		{
@@ -607,7 +607,7 @@ bool ExtendedKalmanFilter::Run(float ax, float ay, float az, float gx, float gy,
 				sum += S[i][j] * Sinv[j][col];
 
 			if (fabs(S[i][i]) < 1e-7f)
-				S[i][i] += 1e-7f;
+				S[i][i] += copysignf(1e-7f, S[i][i]);
 
 			Sinv[i][col] = (Y[i] - sum) / S[i][i];
 		}
